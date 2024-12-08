@@ -15,6 +15,12 @@ public class Look : MonoBehaviour
     {
         var mousePosition = Input.mousePosition;
         var worldPosition = cam.ScreenToWorldPoint(mousePosition);
-        transform.LookAt(worldPosition, Vector3.forward);
+
+        //rotate towards world position
+        var direction = (worldPosition - transform.position).normalized;
+        var angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0, 0, angle);
+
+        //transform.LookAt(worldPosition, Vector3.forward);
     }
 }
