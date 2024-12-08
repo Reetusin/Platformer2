@@ -12,6 +12,10 @@ public class Player : MonoBehaviour
     [Header("Movement")]
     public float movementSpeed = 10.0f;
     public float jumpHeight = 3;
+    public float dashSpeed = 20;
+    public float dashDuration = 0.2f;
+    public float dashCooldown = 1.0f;
+
     
     [Header("Ground Check")]
     public LayerMask groundLayer;
@@ -21,13 +25,19 @@ public class Player : MonoBehaviour
     [Header("Jump Mechanics")]
     public float coyoteTime = 0.2f;
     public float jumBufferTime = 0.2f;
+    public int maxJumps = 2;
 
 
+    private int jumpsLeft;
     private float jumpBufferCounter;
     private float coyoteCounter;
     private bool isGrounded;
     private Rigidbody2D rb;
     public float inputX;
+    public bool isDashing;
+    public float dashTime;
+    public float dashCooldownTime;
+
     
     void Start()
     {
@@ -44,6 +54,7 @@ public class Player : MonoBehaviour
         if(isGrounded)
         {
             coyoteCounter = coyoteTime;
+            jumpsLeft = maxJumps;
         }
         else
         {
@@ -60,18 +71,44 @@ public class Player : MonoBehaviour
         }
 
         
-        if (coyoteCounter > 0 && jumpBufferCounter > 0)
+        if ((coyoteCounter > 0 || jumpsLeft > 0) && jumpBufferCounter > 0)
         {
             jumpBufferCounter = 0;
 
             var jumpForce = Mathf.Sqrt(-2 * Physics2D.gravity.y * jumpHeight * rb.gravityScale);
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+
+            if(!isGrounded)
+            {
+                jumpsLeft--;
+            }
         }
+
+        //dasdh
+        if(Input.GetButtonDown("Fire3") && dashCooldownTime <= 0)
+        {
+            isDashing = true;
+            dashTime = dashDuration;
+            dashCooldownTime = dashCooldown;
+        }
+
+        if(isDashing)
+        {
+            rb.velocity = new Vector2(dashSpeed * inputX, rb.velocity.y);
+            dashTime -= Time.deltaTime;
+
+            if(dashTime <= 0)
+            {
+                isDashing = false;
+            }
+        }
+        dashCooldownTime -= Time.deltaTime;
     }   
 
     void FixedUpdate() //physics update
     {
-        rb.velocity = new Vector2(inputX * movementSpeed, rb.velocity.y);
+        if(!isDashing)
+            rb.velocity = new Vector2(inputX * movementSpeed, rb.velocity.y);
     }
 
     void OnDrawGizmos()
