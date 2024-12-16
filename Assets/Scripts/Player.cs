@@ -13,16 +13,19 @@ public class Player : MonoBehaviour
     public float dashDuration = 0.2f;
     public float dashCooldown = 1.0f;
 
-    
     [Header("Ground Check")]
-    public Transform groundCheck; //player legs
+    public Transform groundCheck; // player legs
     public float groundCheckRadius = 0.2f;
     public LayerMask groundMask;
-    
+
     [Header("Jump Mechanics")]
     public float coyoteTime = 0.2f;
     public float jumpBufferTime = 0.2f;
     public int maxJumps = 1;
+
+    [Header("Audio")]
+    public AudioSource footstepSource;
+    public AudioClip walkingSound;
 
     private int jumpsLeft;
     private float jumpBuffer;
@@ -33,18 +36,22 @@ public class Player : MonoBehaviour
     private bool isDashing;
     private float dashTime;
     private float dashCooldownTime;
+    private bool isPlayingFootsteps;
 
-    
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        if (footstepSource != null && walkingSound != null)
+        {
+            footstepSource.clip = walkingSound;
+            footstepSource.loop = true;
+        }
     }
 
-    
     void Update()
     {
         horizontal = Input.GetAxisRaw("Horizontal");
-        
+
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundMask);
 
         if (isGrounded)
@@ -65,19 +72,19 @@ public class Player : MonoBehaviour
         {
             jumpBuffer -= Time.deltaTime;
         }
-        
+
         if ((coyoteCounter > 0 || jumpsLeft > 0) && jumpBuffer > 0)
         {
             jumpBuffer = 0;
-            
+
             var jumpVelocity = Mathf.Sqrt(jumpHeight * -2f * Physics.gravity.y);
             rb.velocity = new Vector2(rb.velocity.x, jumpVelocity);
 
-            if(!isGrounded)
+            if (!isGrounded)
                 jumpsLeft--;
         }
 
-        //dash
+        // Dash
         if (Input.GetKeyDown(KeyCode.LeftShift) && dashCooldownTime <= 0)
         {
             isDashing = true;
@@ -94,15 +101,36 @@ public class Player : MonoBehaviour
             {
                 isDashing = false;
             }
-        }  
-        dashCooldownTime -= Time.deltaTime;      
-    }
+        }
+        dashCooldownTime -= Time.deltaTime;
 
+        HandleFootsteps();
+    }
 
     private void FixedUpdate()
     {
-        if(!isDashing)
+        if (!isDashing)
             rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
+    }
+
+    private void HandleFootsteps()
+    {
+        if (isGrounded && horizontal != 0 && !isDashing)
+        {
+            if (!isPlayingFootsteps)
+            {
+                footstepSource.Play();
+                isPlayingFootsteps = true;
+            }
+        }
+        else
+        {
+            if (isPlayingFootsteps)
+            {
+                footstepSource.Stop();
+                isPlayingFootsteps = false;
+            }
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D other)
